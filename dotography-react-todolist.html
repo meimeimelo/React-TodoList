@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ToDo List</title>
+    <script src="https://unpkg.com/react@latest/dist/react.js"></script>
+    <script src="https://unpkg.com/react-dom@latest/dist/react-dom.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Quicksand" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app" class="app col-xs-6 col-xs-offset-3"></div>
+    <script type="text/jsx">
+    const Title = () => {
+      return(
+        <div id="titleWrapper">
+          <h2 className="textCenter vert-offset-top-0">Todo List</h2>
+        </div>
+      );
+    }
+
+    class Form extends React.Component{
+      constructor(props) {
+        super(props);
+        this.state = {
+          value: ''
+        };
+        this.handleChange = this.handleChange.bind(this);
+        this.handleNewTodoAddition = this.handleNewTodoAddition.bind(this);
+      }
+
+      handleChange(event) {
+        this.setState({
+          value: event.target.value
+        });
+      }
+
+      handleNewTodoAddition() {
+        if(this.input.value !== '') {
+          this.props.addTodo(this.input.value);
+          this.setState({
+            value: ''
+          });
+          this.input.placeholder = "Add todo here...";
+        }
+      }
+
+      render(){
+        return(
+          <div id="form" className="todo-form">
+            <input ref={node => {
+              this.input = node;
+            }}
+            value={this.state.value}
+            placeholder="Add todos here..."
+            autoComplete="off"
+            onChange={this.handleChange}
+            />
+
+            <button onClick={this.handleNewTodoAddition}> + </button>
+          </div>
+        );
+      }
+    }//end class Form
+
+    const Todo = ({todo, remove, complete}) => {
+      let classes = 'todo';
+      if (todo.complete) {
+        classes += ' list-success'
+      }
+      return (
+        // <p className={classes}>
+        //   {todo.value}
+        //   <button
+        //     className="doneBtn"
+        //     onClick={()=> {
+        //       complete(todo.id)
+        //     }}>
+        //     &#x2713;
+        //   </button>
+        //   <button
+        //     className="removeBtn"
+        //     onClick={()=> {
+        //       remove(todo.id)
+        //     }}>
+        //     x
+        //   </button>
+        // </p>
+        <div className={classes}>
+          {todo.value}
+          <div className="pull-right">
+            <button
+              className="doneBtn"
+              onClick={()=> {
+                complete(todo.id)
+              }}>
+              &#x2713;
+            </button>
+            <button
+              className="removeBtn"
+              onClick={()=> {
+                remove(todo.id)
+              }}>
+              x
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    const List = ({todos, remove, complete}) => {
+      let allTodos = [];
+
+      if(todos.length > 0) {
+        allTodos = todos.map(todo => {
+          // passing todo ,complete and remove method reference
+          return (<Todo todo={todo} complete={complete} remove={remove} />);
+          //return (<p>{todo.value}</p>);
+        });
+      } else {
+        allTodos.push(<h3 id="acu">You have done everything!</h3>);
+      }
+
+      return (
+        <div id="list">
+          <p id="info"> Your Todo List: </p>
+          <div id="todos-list">
+            {allTodos}
+          </div>
+        </div>
+      );
+    };
+
+    class Container extends React.Component{
+      constructor(props){
+        super(props);
+        const startData = [
+          {id: -3, value: "Wake up", complete: false},
+          {id: -2, value: "Take a shower", complete: false},
+          {id: -1, value: "Eat breakfast", complete: false}
+        ];
+
+        const localData = localStorage.todos && JSON.parse(localStorage.todos);
+
+        this.state = {
+          data: localData || startData
+        };
+
+        this.addTodo = this.addTodo.bind(this);
+        this.completeTodo = this.completeTodo.bind(this);
+        this.removeTodo = this.removeTodo.bind(this);
+      }
+
+      updateLocalStorage(){
+        if(typeof(Storage) !== "undefined")
+          localStorage.todos = JSON.stringify(this.state.data);
+      }
+
+      addTodo(val){
+        let id;
+        var complete = false;
+
+        if(typeof(Storage) !== "undefined"){
+          id = Number(localStorage.count);
+          localStorage.count = Number(localStorage.count)+1;
+        } else{
+          id = window.id++;
+        }
+
+        const todo ={
+          value: val,
+          id: id,
+          complete: complete
+        };
+
+        this.state.data.push(todo);
+        this.setState({
+          data: this.state.data
+        }, () =>{
+          this.updateLocalStorage();
+        });
+      }
+
+      completeTodo(id){
+        const list = this.state.data.map(todo => {
+          if (todo.id === id) {
+            todo.complete = todo.complete === true ? false : true;
+          }
+          return todo;
+        });
+        this.setState({
+          data: list
+        }, () =>{
+          this.updateLocalStorage();
+        });
+      }
+
+      removeTodo(id){
+        const list = this.state.data.filter(todo => {
+          if (todo.id !== id)
+          return todo;
+        });
+
+        this.setState({
+          data: list
+        }, () =>{
+          this.updateLocalStorage();
+        });
+      }
+
+      componentDidMount(){
+        localStorage.clear();
+        if(typeof(Storage) !== "undefined"){
+          if(!localStorage.todos){
+            localStorage.todos = JSON.stringify(this.state.data);
+          }
+          if(!localStorage.count){
+            localStorage.count = 0;
+          } else{
+           console.log("%cApp will not remember todos created as LocalStorage Is Not Available",
+                   "color: hotpink; background: #333; font-size: x-large;font-family: Courier;");
+          window.id = 0;
+          }
+        }
+      }
+
+      render() {
+        return (
+          <div id="container">
+            <Title />
+            <Form addTodo={this.addTodo} />
+            <List todos={this.state.data} complete={this.completeTodo} remove={this.removeTodo} />
+          </div>
+        );
+      }
+    }
+    ReactDOM.render(<Container/>, app);
+    </script>
+  </body>
+</html>
